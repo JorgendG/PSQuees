@@ -1,0 +1,9 @@
+# Created by https://www.gitignore.io/api/powershell
+# Edit at https://www.gitignore.io/?templates=powershell
+
+### PowerShell ###
+# Exclude packaged modules
+keys.txt
+
+
+# End of https://www.gitignore.io/api/powershell
