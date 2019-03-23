@@ -122,7 +122,7 @@ Write-Verbose "$stringtosign"
 
     [void]DeleteMessage($queuename, [string]$messageid, [string]$popreceipt)
     {
-        
+
         $method = "DELETE"
         $contenttype = "application/x-www-form-urlencoded"
         $resource = "$QueueName/messages/$($messageid)"
@@ -130,6 +130,7 @@ Write-Verbose "$stringtosign"
         
 
         $headers = $this.NewAuthorizationSignatureSharedLite( $method, $contenttype, $resource, $GMTTime )
+        $popreceipt = $popreceipt.Replace( '+', '%2B' )
         $resource = "$QueueName/messages/$($messageid)?popreceipt=$popreceipt"
         $queue_url = "https://$($this.AccountName).queue.core.windows.net/$($resource)"
         Invoke-RestMethod -Method $method -Uri $queue_url -Headers $headers -ContentType $contenttype
@@ -143,7 +144,6 @@ Write-Verbose "$stringtosign"
         $resource = "$QueueName/messages"
         $GMTTime = (Get-Date).ToUniversalTime().toString('R')
         $queue_url = "https://$($this.AccountName).queue.core.windows.net/$($resource)"
-
         $headers = $this.NewAuthorizationSignatureSharedLite( $method, $contenttype, $resource, $GMTTime )
         
         $result = Invoke-RestMethod -Method $method -Uri $queue_url -Headers $headers -ContentType $contenttype
@@ -152,8 +152,10 @@ Write-Verbose "$stringtosign"
         $popreceipt=$responseXml.QueueMessagesList.QueueMessage.PopReceipt
         $encoded = "$($responseXml.QueueMessagesList.QueueMessage.MessageText)"
         $decoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($encoded))
-Write-Verbose "$decoded"
-        $this.DeleteMessage( $QueueName, $messageid, $popreceipt )
+        if( $null -ne $messageid)
+        {
+            $this.DeleteMessage( $QueueName, $messageid, $popreceipt )
+        }
         return $decoded
     }
 }
