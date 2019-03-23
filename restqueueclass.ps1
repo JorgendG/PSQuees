@@ -61,37 +61,26 @@ Write-Verbose "$stringtosign"
 
     [hashtable]NewAuthorizationSignatureSharedLite( [string]$method, [string]$contentType, [string]$resource, [string]$dateTime)
     {
-        $queue_url = "https://$($this.AccountName).queue.core.windows.net/$($resource)"
-        $canonparms = ""
-        $paramdeel = $resource.Split( '\?' )[1]
-        if( $paramdeel -ne $null )
-        {
-            $params = $paramdeel.Split( '\&')
-            foreach( $param in $params )
-            {
-                $sep = $param.IndexOf( '=' )
-                $canonparms += "`n$($param.Substring( 0, $sep )):$($param.Substring( $sep+1))"
-            }
-            $canonheaders = "x-ms-date:$dateTime`nx-ms-version:$($this.xmlversion)`n"
-            $stringToSign = "$method`n`n$contenttype`n`n$canonheaders/$($this.AccountName)/$($resource.Split( '\?' )[0])$canonparms"
-        }
-        else
-        {
-            $canonheaders = "x-ms-date:$dateTime`nx-ms-version:$($this.xmlversion)`n"
-            $stringToSign = "$method`n`n$contenttype`n`n$canonheaders/$($this.AccountName)/$($resource.Split( '\?' )[0])"
-        }
-        #
+        $canonheaders = "x-ms-date:$dateTime`nx-ms-version:$($this.xmlversion)"
+        #$stringToSign = "$method`n`n$contenttype`n`n$canonheaders/$($this.AccountName)/$($resource.Split( '\?' )[0])"
         
-    Write-Host "$stringtosign"
+        $stringToSign2 = "$method`n" + # verb
+                        "`n" + # content-md5
+                        "$contenttype`n" + # content-type
+                        "`n" + # date
+                        "$canonheaders`n" +  # canonheaders
+                        "/$($this.AccountName)/$resource"
+        
+    Write-Host "$stringtosign2"
         $hmacsha = New-Object System.Security.Cryptography.HMACSHA256
         $hmacsha.key = [Convert]::FromBase64String($this.MasterKey)
-        $signature = $hmacsha.ComputeHash([Text.Encoding]::UTF8.GetBytes($stringToSign))
+        $signature = $hmacsha.ComputeHash([Text.Encoding]::UTF8.GetBytes($stringToSign2))
         $signature = [Convert]::ToBase64String($signature)
         $headers = @{
             'x-ms-date' = $dateTime
             Authorization = "SharedKeyLite " + $this.AccountName + ":" + $signature
             "x-ms-version" = $this.xmlversion
-            Accept = "text/xml"
+            #Accept = "text/xml"
         }
         return $headers
     }
@@ -131,22 +120,20 @@ Write-Verbose "$stringtosign"
         return $decoded
     }
 
-    [string]DeleteMessage($queuename, [string]$messageid, [string]$popreciept)
+    [void]DeleteMessage($queuename, [string]$messageid, [string]$popreceipt)
     {
+        
         $method = "DELETE"
         $contenttype = "application/x-www-form-urlencoded"
-        $resource = "$QueueName/messages/$($messageid)?popreceipt=$popreciept"
+        $resource = "$QueueName/messages/$($messageid)"
         $GMTTime = (Get-Date).ToUniversalTime().toString('R')
-        $queue_url = "https://$($this.AccountName).queue.core.windows.net/$($resource)"
+        
 
         $headers = $this.NewAuthorizationSignatureSharedLite( $method, $contenttype, $resource, $GMTTime )
-        
-        $result = Invoke-RestMethod -Method $method -Uri $queue_url -Headers $headers -ContentType $contenttype
+        $resource = "$QueueName/messages/$($messageid)?popreceipt=$popreceipt"
+        $queue_url = "https://$($this.AccountName).queue.core.windows.net/$($resource)"
+        Invoke-RestMethod -Method $method -Uri $queue_url -Headers $headers -ContentType $contenttype
 
-        [xml]$responseXml = $result.Substring($result.IndexOf("<"))
-        $encoded = "$($responseXml.QueueMessagesList.QueueMessage.MessageText)"
-        $decoded = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($encoded))
-        return $decoded
     }
 
     [string]GetMessage($queuename)
