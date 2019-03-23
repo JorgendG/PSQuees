@@ -6,5 +6,5 @@ $accountname=(Get-Content .\keys.txt)[1]
 $b = New-Object RestQueue( $accountname, $masterkey)
 $b.ListQueues()
 
-"1","2","3" | %{$b.NewMessage("psqueues", "Hallo daar$($_)" )}
+"4","5","6" | %{$b.NewMessage("psqueues", "Hallo daar$($_)" )}
 

@@ -5,6 +5,8 @@ $accountname=(Get-Content .\keys.txt)[1]
 
 $b = New-Object RestQueue( $accountname, $masterkey)
 
-$b.GetMessage("psqueues" )
+#$b.ListQueues()
+$b.ListQueues()
+#$b.GetMessage("psqueues" )
 
 
