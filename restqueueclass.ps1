@@ -1,8 +1,8 @@
 # Define a class
 class RestQueue
 {
-    [string] $AccountName
-    [string] $MasterKey
+    hidden [string] $AccountName
+    hidden [string] $MasterKey
     hidden [string] $xmlversion = "2017-04-17"
 
     # Constructor
@@ -12,7 +12,6 @@ class RestQueue
         $this.MasterKey = $MasterKey
     }
    
-
     hidden [hashtable]NewAuthorizationSignatureSharedLite( [string]$method, [string]$contentType, [string]$resource, [string]$dateTime)
     {
         $canonheaders = "x-ms-date:$dateTime`nx-ms-version:$($this.xmlversion)"
@@ -91,18 +90,34 @@ class RestQueue
         $contenttype = "application/x-www-form-urlencoded"
         $resource = "$QueueName/messages/$($messageid)"
         $GMTTime = (Get-Date).ToUniversalTime().toString('R')
-        
 
         $headers = $this.NewAuthorizationSignatureSharedLite( $method, $contenttype, $resource, $GMTTime )
-        $popreceipt = $popreceipt.Replace( '+', '%2B' )
+        $popreceipt = [system.web.httputility]::urlencode($popreceipt)
         $resource = "$QueueName/messages/$($messageid)?popreceipt=$popreceipt"
         $queue_url = "https://$($this.AccountName).queue.core.windows.net/$($resource)"
         Invoke-RestMethod -Method $method -Uri $queue_url -Headers $headers -ContentType $contenttype
 
     }
 
-    [string]GetMessage($queuename)
+    [string]GetMessage([string]$QueueName)
     {
+        <#
+        .SYNOPSIS
+            Retrieves and deletes a single message from the queue.
+        .DESCRIPTION
+            Retrieves a single message from an Azure Queue. After retrieving the message is deleted from the queue.
+        .EXAMPLE
+            $myqueue = New-ObjectRestQueue( $accountname, $masterkey)
+            $myqueue.GetMessage( '' )
+        .INPUTS
+            Name of the queue
+        .OUTPUTS
+            a string with the message from the queue
+        .PARAMETER InputObject
+        The name of the queue where the message is taken of.
+        .NOTES
+            version: 1.0
+        #>
         $method = "GET"
         $contenttype = "application/x-www-form-urlencoded"
         $resource = "$QueueName/messages"

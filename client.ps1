@@ -5,8 +5,8 @@ $accountname=(Get-Content .\keys.txt)[1]
 
 $b = New-Object RestQueue( $accountname, $masterkey)
 
-#$b.ListQueues()
 $b.ListQueues()
-#$b.GetMessage("psqueues" )
+$myMessage = $b.GetMessage("psqueues" )
 
-
+Write-Host "Retrieved a message from the queue"
+Write-Host "-->$myMessage<--"
